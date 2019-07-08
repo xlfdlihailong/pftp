@@ -99,7 +99,7 @@ int GetPASVRetCode(int iSock, int iCorrectCode,char *pchIP)
         GetServerIP(arrchBuf,pchIP);
         //        HLOG("##########pasv result: %s",arrchBuf);
         int iport= GetPort(arrchBuf);
-        HLOG("#############pasv return port: %d#################",iport);
+//        HLOG("#############pasv return port: %d#################",iport);
         return iport;
     }
     //add by huanghd 20141027 support PORT mode
@@ -129,16 +129,18 @@ int GetRetCode(int iSock, int iCorrectCode)
     struct timeval struTimeOut;
 
     //set connection timeout
-    struTimeOut.tv_sec = 30;
+    struTimeOut.tv_sec = 5 ;
     struTimeOut.tv_usec = 0;
     if (setsockopt(iSock, SOL_SOCKET, SO_RCVTIMEO, (char *)&struTimeOut, sizeof(struTimeOut)) == -1)
     {
+        HLOG("setopt fail");
         return -1;
     }
 
-    //receive ftp server's return code
+    //接收服务端返回的数据，直到遇到\n作为结束标志
     do
     {
+        //不知道收多大，直接收256
         iRet = RecvPacket(iSock, arrchBuf + iRecvSize, sizeof(arrchBuf));
         if (iRet < 0)
         {
@@ -150,7 +152,7 @@ int GetRetCode(int iSock, int iCorrectCode)
         iRecvSize += iRet;
         if(iRecvSize>=CMD_BUF_SIZE)
         {
-            HLOG("iRecvSize = %d", iRecvSize);
+            HLOG("iRecvSize = %d >MAX_LEN 256, recv fail!", iRecvSize);
             return -2;
         }
     }
@@ -169,6 +171,9 @@ int GetRetCode(int iSock, int iCorrectCode)
         strncat(arrchCode, arrchBuf, pchIndex - arrchBuf);
         iRet = atoi(arrchCode);
     }
+
+//    if(iRet==425||iRet==550)
+//        HLOG("ftp服务返回字符串：%s",arrchBuf);
 
 
     //suport PASV command
@@ -260,15 +265,16 @@ int ConnectFtp(int iSock, const char *pchIP, int iPort, const char *pchUser, con
     char arrchBuf[CMD_BUF_SIZE];     /*指令缓冲区*/
     int iRet;                        /*执行结果*/
 
-    HLOG("CreateConnection");
+    HLOG("正在连接ftp服务端：%s",pchIP);
     //建立和FTP服务器的控制连接，如果连接建立失败，返回错误代码
     if (CreateConnection(iSock, pchIP, iPort) != 0)
     {
+        HLOG("连接ftp服务端：%s失败",pchIP);
         return -1;
     }
     //接收FTP服务器的返回代码，如果接收失败，返回错误代码
     iRet = GetRetCode(iSock, 220);
-    HLOG("GetRetCode:%d",iRet);
+//    HLOG("GetRetCode:%d",iRet);
     DEAL_RET_CODE(iRet);
 
 
@@ -278,14 +284,14 @@ int ConnectFtp(int iSock, const char *pchIP, int iPort, const char *pchUser, con
         sprintf(arrchBuf, "USER anonymous\r\n");
     else
         sprintf(arrchBuf, "USER %s\r\n", pchUser);
-    HLOG("SendPacket %s",pchUser);
+//    HLOG("SendPacket %s",pchUser);
     if (0 >= SendPacket(iSock, arrchBuf, strlen(arrchBuf)))
     {
         return -2;
     }
     //接收FTP服务器的返回代码，如果接收失败，返回错误代码
     iRet = GetRetCode(iSock, 331);
-    HLOG("GetRetCode:%d",iRet);
+//    HLOG("GetRetCode:%d",iRet);
 
     //如果FTP服务器返回代码331， 说明需要密码
     if (iRet < 0)
@@ -300,7 +306,7 @@ int ConnectFtp(int iSock, const char *pchIP, int iPort, const char *pchUser, con
     //向FTP服务器发送密码
     memset(arrchBuf, 0, sizeof(arrchBuf));
     sprintf(arrchBuf, "PASS %s\r\n", pchPwd);
-    HLOG("SendPacket %s",pchPwd);
+//    HLOG("SendPacket %s",pchPwd);
     if (0 >= SendPacket(iSock, arrchBuf, strlen(arrchBuf)))
     {
         return -4;
@@ -308,7 +314,7 @@ int ConnectFtp(int iSock, const char *pchIP, int iPort, const char *pchUser, con
 
     //接收FTP服务器的返回代码，如果接收失败，返回错误代码
     iRet = GetRetCode(iSock, 230);
-    HLOG("GetRetCode:%d",iRet);
+//    HLOG("GetRetCode:%d",iRet);
     DEAL_RET_CODE(iRet);
 
     return 0;
@@ -394,7 +400,7 @@ int SendFtpCmd(int iSock, const char *pchCmd)
     struct timeval struTimeOut;
 
     //填写超时时间
-    struTimeOut.tv_sec = 30;
+    struTimeOut.tv_sec = 5;
     struTimeOut.tv_usec = 0;
 
     //设置超时时间
@@ -518,13 +524,14 @@ int ParseFtpListCmd(int iCtrlSock, const char *pchFtpPath, const char *pchIP, FT
     if ((iRet = SendFtpCmd(iCtrlSock, "PASV")) < 0)
     {
         close(iSendSock);
-        HLOG("PASV:%s",strerror(errno));
+        HLOG("发送PASV命令失败:%s",strerror(errno));
         return -1;
     }
     //建立TCP连接
     if (CreateConnection(iSendSock, pchIP, iRet) < 0)
     {
         close(iSendSock);
+        HLOG("建立TCP连接失败:%s",strerror(errno));
         return -2;
     }
 

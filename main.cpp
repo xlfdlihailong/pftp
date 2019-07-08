@@ -1,24 +1,32 @@
 ﻿#include "Ftp.h"
 #include "../plib/plib.h"
 #include "pftp.h"
+void sigExit(int id)
+{
+
+}
+void sigPipe(int id)
+{
+
+}
+
+
+//测试两遍，一遍是正常的，四个上传文件，上传文件夹，下载文件，下载文件夹
+//一遍是断点续传，再每个文件传输过程中都杀掉vsftpd服务测试
 int main()
 {
-    //    WriteLog(TRACE_NORMAL,"Start upload %s ",arrchDescFileName);
-    //    hlog(UploadConnBindSrcAddr(arrchDescFileName, arrchRemotePath, pstruDestInfo->arrchIPRemoteAddr,
-    //                               pstruDestInfo->iFtpPortRemote,
-    //                               pstruDestInfo->arrchFtpUser,
-    //                               pstruDestInfo->arrchFtpPwd, 0, NULL, 0, arrchSrcIP));
-//    hlog(UploadConnBindSrcAddr("/root/send.dat","xlfd","106.13.71.127",21,"sjcs","sjcsfwq",0,NULL,0,"192.168.211.153"));
-//    HLOG("xxxxx");
-
+    //不加这句send会挂
+    plib::setSignals(sigExit,sigPipe);
     pftp ftp;
-    hlog(ftp.connect("106.13.71.127","sjcs","sjcsfwq"));
-//    hlog(ftp.connect("172.16.14.3","sjcs","sjcs2014"));
+    if(ftp.connect("106.13.71.127","sjcs","sjcsfwq")<0)
+    {
+        ftp.reconnect();
+    }
 
-//    hlog(ftp.setPASV());
-//    hlog(ftp.upload("/root/xinstall/dat2","dadiaofei"));
-    hlog(ftp.upload("/root/xinstall/","dadiaofei"));
-//    hlog(ftp.upload("/mnt/snfs/50Gb.file","dadiaofei"));
+    hlog(ftp.upload("/root/data","dadiaofei"));
+    hlog(ftp.upload("/root/xupload","dadiaofei"));
+    hlog(ftp.download("/root","dadiaofei/xinstall/dat1"));
+    hlog(ftp.download("/root","dadiaofei/xinstall"));
 
     hlog(ftp.quit());
     return 0;

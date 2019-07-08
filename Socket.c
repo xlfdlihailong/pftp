@@ -296,6 +296,12 @@ int RecvPacket(int iSocket, void *pBuffer, int uiLength)
     //如果接收时被信号中断，则重新进行接收
     while ((iRet = recv(iSocket, pBuffer, uiLength, 0)) < 0 && errno == EINTR);
     //如果实际接收包的长度小于0，说明接收时出现了错误，等于0表示对方关闭了连接
+    if(iRet<0)
+    {
+        printf("errno: %s\n",(strerror(errno)));
+        printf("EINTR %s\n",(strerror(EINTR)));
+        printf("EAGAIN %s\n",(strerror(EAGAIN)));
+    }
     return iRet;
 }
 
@@ -360,7 +366,7 @@ int RecvFullPacket(int iSocket, void *pBuffer, int iLength)
         //如果接收时被信号中断，则重新进行接收
         //注释解释：如果因为资源临时不可用而长时间不返回，则导致任务长时间不能进行重连，有可能对端服务器已经断网或重启
         while ((iRet = recv(iSocket, pBuffer + iRecv, iRet, MSG_WAITALL)) < 0 && (errno == EINTR/* || errno ==EAGAIN*/))
-        {  
+        {
             //WriteLog(TRACE_NORMAL,"iRet:%d, errno:%d %d %d, %s",iRet, errno, EINTR , EAGAIN, strerror(errno));
             iRet = iLength - iRecv;
         }

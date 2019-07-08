@@ -3,16 +3,12 @@
 #include "Ftp.h"
 #include "../plib/plib.h"
 #define CMD_BUF_SIZE            256
-int UploadWithSpeed(const char *pchLocalPath, const char *pchFtpPath, const char *pchIP, int iCtrlSock, long long lPos, const char *pchPostfix , const int iPostfixFlag, char *arrchNowFile);
-int DownloadWithSpeed(const char *pchLocalPath, const char *pchFtpPath, const char *pchIP, int iCtrlSock, long lPos, const char *pchPostfix);
+
+int GetRetCodeWithRecv(int iSock, int iCorrectCode,char* arrchRecv);
+int SendFtpCmdWithRecv(int iSock, const char *pchCmd, char *arrchRecv);
 class pftp
 {
-    ptcp *ptcpStatus;//状态连接
-    ptcp* ptcpData;//数据连接
-
-//    int iSockStatus;//状态连接
-//    int iSockData;//数据连接
-
+    int sockStatus;//状态连接
     string strIp;
     string strUser;
     string strPwd;
@@ -28,18 +24,30 @@ public:
     int reconnect();//一直重连，1s一次
     int sendcmd(string cmd);
 
+    string pwd();
+    //相对路径
+    int cd(string strdes);
     int quit();
     //<0表示失败
     long long getLength(string path);
     int recvres(char* dataRecv,int len);
 
+    int isExsistDir(string path);
     int setPASV();
 
-    //默认自带断点续传，无限次数，直到传完才返回
+    //默认自带断点续传，无限次数，直到传完才返回,支持服务端的断点续传
+    //支持递归文件夹传输，且支持递归文件夹的各个文件的断点续传
     int upload(string strPathLocal, string strPathRemote);
-    //lpos用于断点续传，默认是0 long 和 longlong在64位下都是8位范围是-9223372036854775807到9223372036854775807，足够
-    int uploadNoReTrans(string strPathLocal, string strPathRemote, char *arrchNowFile,long long lpos=0);
+
+
+    //默认自带断点续传，无限次数，直到传完才返回,仅支持服务端的断点续传
+    //支持递归文件夹传输，且支持递归文件夹的各个文件的断点续传
     int download(string strPathLocal, string strPathRemote, long lpos=0);
+
+
+
+    int UploadWithSpeedUpdateByXlfdInner(const char *pchLocalPath, const char *pchFtpPath, const char *pchPostfix , const int iPostfixFlag);
+    int DownloadWithSpeedUpdateByXlfdInner(const char *pchLocalPath, const char *pchFtpPath, const char *pchPostfix , const int iPostfixFlag);
 };
 
 #endif // PFTP_H
