@@ -76,14 +76,37 @@ int CreateConnection(int iSocket, const char *pchIPAddr, int iPort)
     {
         return -2;
     }
+    //原来的后边的
+    //    //初始化套接字地址结构体
+    //    struSin.sin_family = AF_INET;
+    //    struSin.sin_port = htons(iPort);
+    //    struSin.sin_addr.s_addr = inet_addr(pchIPAddr);
+    //    //向目标地址发起TCP连接，返回状态信息
+    //    return connect(iSocket, (struct sockaddr *)&struSin, sizeof(struSin));
+
+
+    //阻塞式connect的超时设置add by xlfd
+    struct timeval timeo = {3, 0};
+    socklen_t len = sizeof(timeo);
+    setsockopt(iSocket, SOL_SOCKET, SO_SNDTIMEO, &timeo, len);
+
+
 
     //初始化套接字地址结构体
     struSin.sin_family = AF_INET;
     struSin.sin_port = htons(iPort);
     struSin.sin_addr.s_addr = inet_addr(pchIPAddr);
-
     //向目标地址发起TCP连接，返回状态信息
-    return connect(iSocket, (struct sockaddr *)&struSin, sizeof(struSin));
+    if(connect(iSocket, (struct sockaddr *)&struSin, sizeof(struSin))==-1)
+    {
+        if (errno == EINPROGRESS)
+        {
+                fprintf(stderr, "连接超时\n");
+                return -1;
+        }
+        perror("connect");
+        return 0;
+    }
 }
 
 /*

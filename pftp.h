@@ -33,6 +33,7 @@ public:
     int recvres(char* dataRecv,int len);
 
     int isExsistDir(string path);
+    //被动模式，同时获取真实ip和端口，要在能访问的地方连接虚拟ip，否则不返回真实ip
     int setPASV();
 
     //默认自带断点续传，无限次数，直到传完才返回,支持服务端的断点续传

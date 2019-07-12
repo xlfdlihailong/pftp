@@ -92,6 +92,7 @@ int GetPASVRetCode(int iSock, int iCorrectCode,char *pchIP)
         iRet = atoi(arrchCode);
     }
 
+    HLOG_STRING(arrchBuf);
     //WriteLog(TRACE_DEBUG,"%s",arrchBuf);
     //suport PASV command
     if (iRet == 227)

@@ -129,6 +129,7 @@ int pftp::isExsistDir(string path)
     return 0;
 }
 
+//被动模式，同时获取真实ip和端口，要在能访问的地方连接虚拟ip，否则不返回真实ip
 int pftp::setPASV()
 {
     int iRet=-99;
@@ -361,6 +362,7 @@ retrans:
     }
 
 
+    //被动模式连接ftp服务，如果是虚拟ip，则返回真实ip和端口
     //connect ftp server using PASV mode
     memset(arrchTmp,0,sizeof(arrchTmp));
     if ((iRet = SendPASVFtpCmd(this->sockStatus, "PASV",arrchTmp)) < 0)
